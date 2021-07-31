@@ -2,12 +2,35 @@
 #ifndef OMNI_FILE_LISTING_H
 #define OMNI_FILE_LISTING_H
 
+#include <vector>
+#include <string>
+
 namespace omni {
 namespace parse {
 
+/// \brief Enumerate the possible types of directory search (this is equivalent to whether there is
+///        a -r modifier after ls).
 enum class SearchStyle {
   RECURSIVE, NONRECURSIVE
 };
+
+/// \brief An enumerator to make note of the operating systems
+enum class OperatingSystem {
+  LINUX, UNIX, WINDOWS, MAC_OS
+};
+
+/// Pre-processor directives determine the separators to use in path and file concatenation
+/// \{
+#if defined(__linux__)
+constexpr OperatingSystem detected_os = OperatingSystem::LINUX;
+#elif defined(unix) || defined(__unix) || defined(__unix__)
+constexpr OperatingSystem detected_os = OperatingSystem::UNIX;
+#elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+constexpr OperatingSystem detected_os = OperatingSystem::WINDOWS;
+#elif defined(__APPLE__) || defined(__MACH__)
+constexpr OperatingSystem detected_os = OperatingSystem::MAC_OS;
+#endif
+/// \}
 
 std::string osSeparator();
   
