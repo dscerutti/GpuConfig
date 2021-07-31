@@ -23,14 +23,48 @@ std::string osSeparator() {
   __builtin_unreachable();
 }
 
-std::vector<std::string> listDirectory(const std::string &dir_path, SearchStyle r_option) {
-  
-  // Verify that the path is a directory
+/// \brief Test whether a path is a file, directory, or must instead be a regular expression.
+DrivePathType getDrivePathType(const std::string &path) {
+
+  // Try getting the status.  If this fails, the path is probably a regular expression.
   struct stat path_stat;
-  if (stat(dir_path.c_str(), &path_stat) != 0 || S_ISDIR(path_stat.st_mode) != 1) {
-    rt_err("Path " + dir_path + " is not a directory.", "listDirectory");
+  if (stat(path.c_str(), &path_stat) == 0) {
+    if (S_ISREG(path_stat.st_mode) == 1) {
+      return DrivePathType::FILE;
+    }
+    else if (S_ISDIR(path_stat.st_mode) == 1) {
+      return DrivePathType::DIRECTORY;
+    }
+  }
+  
+  // In order to confirm that the path is a regular expression, look for * or []
+  bool star_found = false;
+  bool left_bracket_found = false;
+  bool pair_bracket_found = false;
+  for (int i = 0; i < path.size(); i++) {
+    star_found = (star_found || path[i] == '*');
+    left_bracket_found = (left_bracket_found || path[i] == '[');
+    pair_bracket_found = (pair_bracket_found || (left_bracket_found && path[i] == ']'));
+  }
+  if (star_found || pair_bracket_found) {
+    return DrivePathType::REGEXP;
   }
 
+  // Throw an error
+#if 0
+  rt_err("Path " + path + " is not a file or directory, and could not be interpreted as a regular "
+	 "expression.", "getDrivePathType");
+#endif
+  __builtin_unreachable();
+}
+  
+std::vector<std::string> parseRegExp(const std::string &regexp_path, SearchStyle r_option) {
+  std::vector<std::string> ls_result;
+  return ls_result;
+}
+  
+std::vector<std::string> listDirectory(const std::string &dir_path, SearchStyle r_option) {
+  
   // Attempt to open the directory
   std::vector<std::string> ls_result;
   DIR *dir;

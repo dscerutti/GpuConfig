@@ -14,6 +14,12 @@ enum class SearchStyle {
   RECURSIVE, NONRECURSIVE
 };
 
+/// \brief Enumerate whether a path can be determined to be a file, directory, or, barring any
+///        other explanation, a regular expression.
+enum class DrivePathType {
+  FILE, DIRECTORY, REGEXP
+};
+
 /// \brief An enumerator to make note of the operating systems
 enum class OperatingSystem {
   LINUX, UNIX, WINDOWS, MAC_OS
@@ -33,6 +39,10 @@ constexpr OperatingSystem detected_os = OperatingSystem::MAC_OS;
 /// \}
 
 std::string osSeparator();
+
+DrivePathType getDrivePathType(const std::string &path);
+
+std::vector<std::string> parseRegExp(const std::string &regexp_path, SearchStyle r_option);
   
 std::vector<std::string> listDirectory(const std::string &path,
 				       SearchStyle r_option = SearchStyle::NONRECURSIVE);
