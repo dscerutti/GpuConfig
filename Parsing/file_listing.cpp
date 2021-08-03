@@ -47,7 +47,8 @@ DrivePathType getDrivePathType(const std::string &path) {
 ///
 /// \param dir_path  The path to search
 /// \param r_option  Option to use recursion or not
-std::vector<std::string> listDirectory(const std::string &dir_path, SearchStyle r_option) {
+std::vector<std::string> listDirectory(const std::string &dir_path, const SearchStyle r_option,
+				       const DrivePathType entity_kind) {
   
   // Attempt to open the directory
   std::vector<std::string> ls_result;
@@ -69,17 +70,23 @@ std::vector<std::string> listDirectory(const std::string &dir_path, SearchStyle 
       switch (r_option) {
       case SearchStyle::RECURSIVE:
 	{
-	  std::vector<std::string> nested_result = listDirectory(nested_dir_path, r_option);
+	  std::vector<std::string> nested_result = listDirectory(nested_dir_path, r_option,
+                                                                 entity_kind);
           ls_result.insert(ls_result.end(), nested_result.begin(), nested_result.end());
 	  break;
         }
       case SearchStyle::NONRECURSIVE:
+        if (entity_kind == DrivePathType::DIRECTORY) {
+          ls_result.push_back(nested_dir_path);
+        }
 	break;
       }
     }
     else if (item_type == DrivePathType::FILE) {
-      std::string new_name(ent->d_name);
-      ls_result.push_back(dir_path + osSeparator() + new_name);
+      if (entity_kind == DrivePathType::FILE) {
+        std::string new_name(ent->d_name);
+        ls_result.push_back(dir_path + osSeparator() + new_name);
+      }
     }
   }
   closedir(dir);
@@ -157,7 +164,7 @@ std::vector<std::string> listRegExp(const std::string &regexp_path, SearchStyle 
   }
 
   // For each level, look at the appropriate directory and search for matching subdirectories
-  const int n_levels = levels.size();
+  const int n_levels = levels.size();  
   std::string partial_path = (absolute_path) ? "" : ".";
   for (i = 0; i < n_levels; i++) {
     std::string test_path = partial_path + sep_char + levels[i];
@@ -181,15 +188,23 @@ std::vector<std::string> listRegExp(const std::string &regexp_path, SearchStyle 
         std::vector<std::string> nested_result = listDirectory(test_path, r_option);
         ls_result.insert(ls_result.end(), nested_result.begin(), nested_result.end());
       }
+      else {
+	partial_path = test_path;
+      }
       break;
-    case DrivePathType::REGEXP:      
+    case DrivePathType::REGEXP:
       {
 	std::regex level_expr(levels[i]);
         std::vector<std::string> test_paths = listDirectory(partial_path,
-                                                            SearchStyle::NONRECURSIVE);
+							    SearchStyle::NONRECURSIVE,
+							    DrivePathType::FILE);
+        std::vector<std::string> additional_paths = listDirectory(partial_path,
+							          SearchStyle::NONRECURSIVE,
+							          DrivePathType::DIRECTORY);
+	test_paths.insert(test_paths.end(), additional_paths.begin(), additional_paths.end());
         const int n_paths = test_paths.size();
         for (int j = 0 ; j < n_paths; j++) {
-
+	  
           // Test that the deepest level of this path conforms to the regular expression at hand.
           if (regex_match(getBaseName(getNormPath(test_paths[j])), level_expr)) {
 
@@ -205,6 +220,7 @@ std::vector<std::string> listRegExp(const std::string &regexp_path, SearchStyle 
           }
 	}
       }
+      break;
     }
   }
   
@@ -218,7 +234,7 @@ int main () {
 
   using omni::parse::listDirectory;
   using omni::parse::SearchStyle;
-  
+#if 0  
   std::vector<std::string> T1 = listDirectory("/Users/davidcerutti/amber20_src",
 					      SearchStyle::NONRECURSIVE);
   printf("T1 = [\n");
@@ -233,6 +249,15 @@ int main () {
     printf("%s\n", T2[i].c_str());
   }
   printf("];\n\n");
+#endif
+  std::vector<std::string> T3 = listRegExp("/Users/davidcerutti/TestFiles/a_[abc].*",
+					   SearchStyle::RECURSIVE);
+  printf("T3 = [\n");
+  for (int i = 0; i < T3.size(); i++) {
+    printf("%s\n", T3[i].c_str());
+  }
+  printf("];\n\n");
 
+  
   return 0;
 }

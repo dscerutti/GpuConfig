@@ -43,7 +43,8 @@ char osSeparator();
 DrivePathType getDrivePathType(const std::string &path);
 
 std::vector<std::string> listDirectory(const std::string &path,
-				       SearchStyle r_option = SearchStyle::NONRECURSIVE);
+				       SearchStyle r_option = SearchStyle::NONRECURSIVE,
+				       DrivePathType entity_kind = DrivePathType::FILE);
 
 std::string getBaseName(const std::string &path);
 
