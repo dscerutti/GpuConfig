@@ -38,15 +38,19 @@ constexpr OperatingSystem detected_os = OperatingSystem::MAC_OS;
 #endif
 /// \}
 
-std::string osSeparator();
+char osSeparator();
 
 DrivePathType getDrivePathType(const std::string &path);
 
-std::vector<std::string> parseRegExp(const std::string &regexp_path, SearchStyle r_option);
-  
 std::vector<std::string> listDirectory(const std::string &path,
 				       SearchStyle r_option = SearchStyle::NONRECURSIVE);
 
+std::string getBaseName(const std::string &path);
+
+std::string getNormPath(const std::string &path);
+  
+std::vector<std::string> listRegExp(const std::string &regexp_path, SearchStyle r_option);
+  
 } // namespace parse
 } // namespace omni
 
