@@ -50,7 +50,7 @@ std::string getBaseName(const std::string &path);
 
 std::string getNormPath(const std::string &path);
   
-std::vector<std::string> listRegExp(const std::string &regexp_path, SearchStyle r_option);
+std::vector<std::string> listFilesInPath(const std::string &regexp_path, SearchStyle r_option);
   
 } // namespace parse
 } // namespace omni
