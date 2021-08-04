@@ -88,10 +88,34 @@ std::vector<int3> findPreProcessorScopes(const TextFile &tf) {
   bool do_search = (n_pp_line > 0);
   int search_level = 1;
   while (do_search) {
-    current_level = 0;
+    int current_level = 0;
+    const int n_found = scopes.size();
+    int3 tsm;
     for (int i = 0; i < n_pp_line; i++) {
-      if (
-    }  
+      if (sc_type[i] == PreProcessorScopeModifier::IF) {
+	current_level++;
+	if (current_level == search_level) {
+	  tsm.x = search_level;
+	  tsm.y = i + 1;
+	}
+      }
+      else if ((sc_type[i] == PreProcessorScopeModifier::ELIF ||
+		sc_type[i] == PreProcessorScopeModifier::ELSE) && current_level == search_level) {
+	tsm.z = i;
+	scopes.push_back(tsm);
+	n_found++;
+	tsm.x = search_level;
+	tsm.y = i + 1;
+      }
+      else if (sc_type[i] == PreProcessorScopeModifier::ENDIF) {
+        if (current_level == search_level) {
+          tsm.z = i;
+          scopes.push_back(tsm);
+        }
+        current_level--;
+      }
+    }
+    do_search = (scopes.size() > n_found);
   }
 }
   
