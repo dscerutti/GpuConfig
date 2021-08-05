@@ -28,20 +28,34 @@ enum class PreProcessorScopeModifier {
   ELSE,  ///< The line is a pre-processor else statement
   ENDIF, ///< The line is a pre-processor endif statement
 };
-  
-PreProcessorScopeModifier testScopeModifier(const char* line, int nchar);
 
+/// \brief Describe a named C++ scope in terms of its place in a file, the namespaces it occupies,
+///        and any annotation that appears to be associated with it.
+struct CppScope {
+  int start_line;
+  int start_pos;
+  int end_line;
+  int end_pos;
+  std::string scope_name;
+  std::string file_name;
+  std::vector<std::string> namespaces;
+};
+  
 bool lineIsPreProcessor(const char* line, int nchar);
 
-std::vector<int3> findPreProcessorScopes(const TextFile &tf);
+PreProcessorScopeModifier testScopeModifier(const char* line, int nchar);
 
+std::vector<int3> findPreProcessorScopes(const TextFile::Reader &tfr);
+
+std::vector<CppScope> findCppScopes(const TextFile::Reader &tfr);
+  
 ObjectIdentifier searchFileForObject(const std::string &object_name, const std::string &filename);
 
-void searchFileForObject(const std::string &object_name,
-                         const std::string &member_name = std::string,
-                         ObjectReportType report_format = ObjectReportType::FULL);
+void searchObject(const std::string &object_name,  const std::string &member_name = std::string,
+                  ObjectReportType report_format = ObjectReportType::FULL);
 
 } // namespace docs
 } // namespace omni
+
 
 #endif

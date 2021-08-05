@@ -64,11 +64,10 @@ PreProcessorScopeModifier testScopeModifier(const char* line, const int nchar) {
 
 /// \brief Find all #if / #elif / #else / #endif pre-processor scopes within a given file.
 ///
-/// \param filename  The name of the file
-std::vector<int3> findPreProcessorScopes(const TextFile &tf) {
+/// \param tf  Text of the file, read into RAM
+std::vector<int3> findPreProcessorScopes(const TextFile::Reader &tfr) {
 
   // Make a list of lines with pre-processor directives
-  const TextFile::Reader tfr = tf.data();
   std::vector<int> pp_lines;
   for (int i = 0; i < tfr.line_count; i++) {
     const int nchar = tfr.line_limits[i + 1] - tfr.line_limits[i];
@@ -86,40 +85,76 @@ std::vector<int3> findPreProcessorScopes(const TextFile &tf) {
   // Sort the lines with pre-processor directives into a list of scopes
   std::vector<int3> scopes;
   bool do_search = (n_pp_line > 0);
-  int search_level = 1;
+  int search_depth = 1;
   while (do_search) {
-    int current_level = 0;
+    int current_depth = 0;
     const int n_found = scopes.size();
     int3 tsm;
     for (int i = 0; i < n_pp_line; i++) {
       if (sc_type[i] == PreProcessorScopeModifier::IF) {
-	current_level++;
-	if (current_level == search_level) {
-	  tsm.x = search_level;
+	current_depth++;
+	if (current_depth == search_depth) {
+	  tsm.x = search_depth;
 	  tsm.y = i + 1;
 	}
       }
       else if ((sc_type[i] == PreProcessorScopeModifier::ELIF ||
-		sc_type[i] == PreProcessorScopeModifier::ELSE) && current_level == search_level) {
+		sc_type[i] == PreProcessorScopeModifier::ELSE) && current_depth == search_depth) {
 	tsm.z = i;
 	scopes.push_back(tsm);
 	n_found++;
-	tsm.x = search_level;
+	tsm.x = search_depth;
 	tsm.y = i + 1;
       }
       else if (sc_type[i] == PreProcessorScopeModifier::ENDIF) {
-        if (current_level == search_level) {
+        if (current_depth == search_depth) {
           tsm.z = i;
           scopes.push_back(tsm);
         }
-        current_level--;
+        current_depth--;
       }
     }
     do_search = (scopes.size() > n_found);
   }
+
+  // Return the result as a vector of int3 objects, x = level, y = first line of scope, and
+  // z = last line of scope.  The list will have to be searched exhaustively to determine what
+  // scope any particular line of code belongs to.  Some scopes will be 'linked' in that only
+  // one of a chain of scopes can be part of the code at once.  This will be detectable by
+  // the first line of one scope being only one more than the last line of the previous scope.
+  return scopes;
 }
   
-/// \brief Find all scopes within { } braces in a given file.
+/// \brief Find all C++ scopes within { } braces in a given file.
+std::vector<CppScope> findCppScopes(const TextFile::Reader &tfr) {
+  bool in_starred_comment = false;
+  for (int i = 0; i < tfr.line_count; i++) {
+    const int l_start = tfr.line_limits[i];
+    const int l_end = tfr.line_limits[i + 1];
+    int j = l_start;
+    while (j < l_end) {
+      if (in_starred_comment) {
+        if (j < l_end - 1 && tfr.text[j] == '*' && tfr.text[j + 1] == '/') {
+	  j += 2;
+	  in_starred_comment = false;
+	}
+      }
+      else {
+
+        // Double slash comments out the rest of the line
+        if (j < l_end - 1 && tfr.text[j] == '/' && tfr.text[j + 1] == '/') {
+          j = l_end;
+          continue;
+        }
+	
+	if (j < l_end - 1 && tfr.text[j] == '/' && tfr.text[j + 1] == '*') {
+	  j += 2;
+	  in_starred_comment = true;
+	}
+      }
+    }
+  }
+}
   
 /// \brief Search a particular file for instances of a given object.
 ///
@@ -128,7 +163,7 @@ std::vector<int3> findPreProcessorScopes(const TextFile &tf) {
 ObjectIdentifier searchFileForObject(const std::string &object_name, const std::string &filename) {
   const TextFile tf(filename);
   const TextFile::Reader tfr = tf.data();
-  for (int i = 0; i <
+  for (int i = 0; i < 
 }
 
 /// \brief Search for an object in the entire OMNI source code tree.
